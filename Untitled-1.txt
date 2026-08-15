@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>รายชื่อผู้สมัคร - กองบัญชาการ</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e2230; --border:#2a2f3d;
+    --text:#e7e9ee; --muted:#9aa0ae; --accent:#5b8cff;
+    --good:#2fbf71; --warn:#e8a33d; --bad:#e8546b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI","Sarabun","Noto Sans Thai",system-ui,sans-serif;
+    padding:20px; max-width:900px; margin-inline:auto;
+  }
+  h1{font-size:19px; margin:0 0 4px;}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .sheetlink{color:var(--accent); text-decoration:none; font-size:12.5px;}
+  .sheetlink:hover{text-decoration:underline;}
+  .controls{
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;
+    position:sticky; top:0; background:var(--bg); padding:10px 0; z-index:6;
+  }
+  input[type=text], select{
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:9px 12px; border-radius:8px; font-size:13.5px; outline:none;
+  }
+  input[type=text]{flex:1; min-width:180px;}
+  input[type=text]:focus, select:focus{border-color:var(--accent);}
+  button.iconbtn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:9px 14px; border-radius:8px; font-size:13.5px; cursor:pointer; white-space:nowrap;
+  }
+  button.iconbtn:hover{border-color:var(--accent); color:var(--accent);}
+  button.iconbtn:disabled{opacity:.5; cursor:default;}
+  .count{color:var(--muted); font-size:12.5px; margin-bottom:12px;}
+  .status{font-size:12.5px; padding:10px 14px; border-radius:8px; margin-bottom:14px;}
+  .status.loading{background:rgba(91,140,255,.1); color:var(--accent); border:1px solid rgba(91,140,255,.3);}
+  .status.error{background:rgba(232,84,107,.1); color:var(--bad); border:1px solid rgba(232,84,107,.3);}
+  .grid{display:flex; flex-direction:column; gap:12px;}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px; border-left:3px solid var(--border);
+  }
+  .card.pass{border-left-color:var(--good);}
+  .card.fail{border-left-color:var(--bad);}
+  .card.pending{border-left-color:var(--warn);}
+  .card-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:10px; flex-wrap:wrap;
+  }
+  .name{font-size:16px; font-weight:600;}
+  .meta{color:var(--muted); font-size:12.5px; margin-top:2px;}
+  .badges{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .badge{
+    font-size:12px; padding:4px 10px; border-radius:999px; white-space:nowrap;
+    border:1px solid var(--border);
+  }
+  .badge.age{background:var(--panel2); color:var(--muted);}
+  .badge.ready-yes{background:rgba(47,191,113,.15); color:var(--good); border-color:rgba(47,191,113,.3);}
+  .badge.ready-no{background:rgba(232,163,61,.15); color:var(--warn); border-color:rgba(232,163,61,.3);}
+  .badge.exp{background:rgba(91,140,255,.12); color:var(--accent); border-color:rgba(91,140,255,.3);}
+  .row{margin-top:10px; font-size:13px; color:var(--muted);}
+  .links{margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;}
+  .linkbtn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); text-decoration:none; font-size:12.5px;
+    padding:6px 10px; border-radius:7px;
+  }
+  .linkbtn:hover{border-color:var(--accent); color:var(--accent);}
+  .linkbtn.doc::before{content:"📄";}
+  .linkbtn.cert::before{content:"🎖️";}
+  .linkbtn.resume::before{content:"📝";}
+  .group-label{font-size:11.5px; color:var(--muted); margin-top:8px; text-transform:uppercase; letter-spacing:.03em;}
+  .statusbar{
+    margin-top:14px; padding-top:12px; border-top:1px solid var(--border);
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .statusbar .label{font-size:12px; color:var(--muted);}
+  .statbtn{
+    font-size:12.5px; padding:6px 12px; border-radius:7px; cursor:pointer;
+    border:1px solid var(--border); background:var(--panel2); color:var(--muted);
+  }
+  .statbtn:hover{border-color:var(--accent);}
+  .statbtn.pass.active{background:rgba(47,191,113,.18); color:var(--good); border-color:var(--good);}
+  .statbtn.fail.active{background:rgba(232,84,107,.18); color:var(--bad); border-color:var(--bad);}
+  .statbtn.pending.active{background:rgba(232,163,61,.18); color:var(--warn); border-color:var(--warn);}
+  .empty{color:var(--muted); font-size:15px; text-align:center; padding:40px 0;}
+  .discord{color:#8ea1e1;}
+  .spin{
+    display:inline-block; width:12px; height:12px; border-radius:50%;
+    border:2px solid rgba(91,140,255,.3); border-top-color:var(--accent);
+    animation:spin .8s linear infinite; vertical-align:middle; margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .savehint{font-size:11px; color:var(--muted); margin-left:auto;}
+</style>
+</head>
+<body>
+
+<h1>รายชื่อผู้สมัคร กองบัญชาการ</h1>
+<div class="sub">
+  <span>ทั้งหมด <span id="totalCount">0</span> รายการ</span>
+  <a class="sheetlink" href="https://docs.google.com/spreadsheets/d/1JLoXdFpkaOc218d0Sv2gJ48FLwdS_uYS-NVXR754-D0/edit?usp=sharing" target="_blank" rel="noopener">↗ เปิดชีตต้นฉบับ</a>
+  <span id="lastUpdated" class="muted"></span>
+</div>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="ค้นหา ยศ-ชื่อ / Discord / อีเมล...">
+  <select id="readyFilter"><option value="">ความพร้อม: ทั้งหมด</option></select>
+  <select id="expFilter"><option value="">ประสบการณ์: ทั้งหมด</option></select>
+  <select id="statusFilter">
+    <option value="">สถานะ: ทั้งหมด</option>
+    <option value="pass">ผ่าน</option>
+    <option value="fail">ไม่ผ่าน</option>
+    <option value="pending">รอตรวจสอบ</option>
+  </select>
+  <button class="iconbtn" id="refreshBtn">↻ รีเฟรชข้อมูล</button>
+</div>
+
+<div id="statusBox"></div>
+<div class="count" id="resultCount"></div>
+<div class="grid" id="grid"></div>
+<div class="empty" id="emptyMsg" style="display:none;">ไม่พบข้อมูลที่ตรงกับการค้นหา</div>
+
+<script>
+const SHEET_ID = '1JLoXdFpkaOc218d0Sv2gJ48FLwdS_uYS-NVXR754-D0';
+const STATUS_KEY = 'applicant_statuses';
+
+let DATA = [];
+let STATUSES = {}; // { applicantId: 'pass' | 'fail' | 'pending' }
+
+const grid = document.getElementById('grid');
+const searchEl = document.getElementById('search');
+const readyEl = document.getElementById('readyFilter');
+const expEl = document.getElementById('expFilter');
+const statusFilterEl = document.getElementById('statusFilter');
+const resultCount = document.getElementById('resultCount');
+const emptyMsg = document.getElementById('emptyMsg');
+const statusBox = document.getElementById('statusBox');
+const refreshBtn = document.getElementById('refreshBtn');
+const lastUpdated = document.getElementById('lastUpdated');
+
+// ---------- Fetch sheet via Google Visualization JSONP endpoint (avoids CORS block) ----------
+function fetchSheetJSONP(){
+  return new Promise((resolve, reject)=>{
+    const cbName = '__gvizCB_' + Math.random().toString(36).slice(2);
+    const timeoutId = setTimeout(()=>{ cleanup(); reject(new Error('หมดเวลาโหลดข้อมูล')); }, 15000);
+    function cleanup(){
+      clearTimeout(timeoutId);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = (json)=>{ cleanup(); resolve(json); };
+    const script = document.createElement('script');
+    script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cbName}&gid=0&_=${Date.now()}`;
+    script.onerror = ()=>{ cleanup(); reject(new Error('โหลดสคริปต์จากชีตไม่สำเร็จ')); };
+    document.body.appendChild(script);
+  });
+}
+
+function gvizToTable(json){
+  if(!json || !json.table) throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+  const headers = json.table.cols.map(c => (c.label || c.id || '').trim());
+  const dataRows = json.table.rows.map(r =>
+    (r.c || []).map(cell => {
+      if(!cell) return '';
+      if(cell.f !== undefined && cell.f !== null) return String(cell.f);
+      if(cell.v !== undefined && cell.v !== null) return String(cell.v);
+      return '';
+    })
+  );
+  return { headers, dataRows };
+}
+
+function findCol(headers, ...needles){
+  for(let i=0;i<headers.length;i++){
+    const h = (headers[i]||'').trim();
+    if(needles.some(n => h.includes(n))) return i;
+  }
+  return -1;
+}
+
+function splitLinks(cell){
+  if(!cell) return [];
+  return cell.split(',').map(s=>s.trim()).filter(s=>s.startsWith('http'));
+}
+
+function rowsToRecords(headers, dataRows){
+  const cIdx = {
+    timestamp: findCol(headers, 'ประทับเวลา'),
+    email: findCol(headers, 'อีเมล'),
+    name: findCol(headers, 'ยศ-ชื่อ'),
+    discord: findCol(headers, 'Discord'),
+    age: findCol(headers, 'อายุ'),
+    docs: findCol(headers, 'เอกสารประกาศ'),
+    cert: findCol(headers, 'หลักฐานการจบ'),
+    resume: findCol(headers, 'Resume'),
+    experience: findCol(headers, 'ประสบการณ์'),
+    skills: findCol(headers, 'ความสามารถพิเศษ'),
+    ready: findCol(headers, 'พร้อมเริ่มปฏิบัติงาน'),
+  };
+  const records = [];
+  for(let r=0; r<dataRows.length; r++){
+    const row = dataRows[r];
+    const get = (idx) => idx>=0 ? (row[idx]||'').trim() : '';
+    const name = get(cIdx.name), email = get(cIdx.email), timestamp = get(cIdx.timestamp);
+    if(!name && !email && !timestamp) continue;
+    const id = (email || (discord => discord)(get(cIdx.discord)) || (name + timestamp)).toLowerCase();
+    records.push({
+      id,
+      timestamp, email, name,
+      discord: get(cIdx.discord),
+      age: get(cIdx.age),
+      docs: splitLinks(get(cIdx.docs)),
+      cert: splitLinks(get(cIdx.cert)),
+      resume: splitLinks(get(cIdx.resume)),
+      experience: get(cIdx.experience),
+      skills: get(cIdx.skills),
+      ready: get(cIdx.ready),
+    });
+  }
+  return records;
+}
+
+function setStatusMsg(type, msg){
+  if(!msg){ statusBox.innerHTML=''; return; }
+  statusBox.innerHTML = `<div class="status ${type}">${type==='loading'?'<span class="spin"></span>':''}${msg}</div>`;
+}
+
+function uniqueOptions(key){
+  const set = new Set();
+  DATA.forEach(d => { if(d[key]) set.add(d[key]); });
+  return Array.from(set);
+}
+
+function rebuildFilters(){
+  const prevReady = readyEl.value, prevExp = expEl.value;
+  readyEl.innerHTML = '<option value="">ความพร้อม: ทั้งหมด</option>';
+  expEl.innerHTML = '<option value="">ประสบการณ์: ทั้งหมด</option>';
+  uniqueOptions('ready').forEach(v=>{
+    const o = document.createElement('option'); o.value=v; o.textContent=v;
+    readyEl.appendChild(o);
+  });
+  uniqueOptions('experience').forEach(v=>{
+    const o = document.createElement('option'); o.value=v; o.textContent=v;
+    expEl.appendChild(o);
+  });
+  if([...readyEl.options].some(o=>o.value===prevReady)) readyEl.value = prevReady;
+  if([...expEl.options].some(o=>o.value===prevExp)) expEl.value = prevExp;
+}
+
+function readyClass(v){
+  if(!v) return '';
+  if(v.includes('พร้อม') && !v.includes('รอ') && !v.includes('ต้อง')) return 'ready-yes';
+  return 'ready-no';
+}
+
+function linkGroup(label, cls, urls){
+  if(!urls || urls.length===0) return '';
+  const btns = urls.map((u,i)=>`<a class="linkbtn ${cls}" href="${u}" target="_blank" rel="noopener">${label}${urls.length>1 ? ' '+(i+1) : ''}</a>`).join('');
+  return `<div class="group-label">${label}${urls.length>1 ? ' ('+urls.length+' ไฟล์)' : ''}</div><div class="links">${btns}</div>`;
+}
+
+async function saveStatus(id, value){
+  STATUSES[id] = value;
+  try{
+    await window.storage.set(STATUS_KEY, JSON.stringify(STATUSES), true);
+  }catch(err){
+    console.error('บันทึกสถานะไม่สำเร็จ', err);
+  }
+  render();
+}
+
+function render(){
+  const q = searchEl.value.trim().toLowerCase();
+  const readyVal = readyEl.value;
+  const expVal = expEl.value;
+  const statusVal = statusFilterEl.value;
+
+  const filtered = DATA.filter(d=>{
+    const st = STATUSES[d.id] || 'pending';
+    if(readyVal && d.ready !== readyVal) return false;
+    if(expVal && d.experience !== expVal) return false;
+    if(statusVal && st !== statusVal) return false;
+    if(q){
+      const hay = [d.name, d.discord, d.email].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('totalCount').textContent = DATA.length;
+  resultCount.textContent = `แสดง ${filtered.length} จาก ${DATA.length} รายการ`;
+  grid.innerHTML = '';
+  emptyMsg.style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(d=>{
+    const st = STATUSES[d.id] || 'pending';
+    const card = document.createElement('div');
+    card.className = `card ${st}`;
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="name">${d.name || '(ไม่ระบุชื่อ)'}</div>
+          <div class="meta">Discord: <span class="discord">${d.discord || '-'}</span> &nbsp;•&nbsp; ${d.email || '-'}</div>
+          <div class="meta">ส่งแบบฟอร์ม: ${d.timestamp || '-'}</div>
+        </div>
+        <div class="badges">
+          <span class="badge age">อายุ ${d.age || '-'}</span>
+          ${d.experience ? `<span class="badge exp">${d.experience}</span>` : ''}
+          ${d.ready ? `<span class="badge ${readyClass(d.ready)}">${d.ready}</span>` : ''}
+        </div>
+      </div>
+      ${d.skills ? `<div class="row">ความสามารถพิเศษ: ${d.skills}</div>` : ''}
+      ${linkGroup('เอกสาร', 'doc', d.docs)}
+      ${linkGroup('วุฒิบัตร', 'cert', d.cert)}
+      ${linkGroup('Resume', 'resume', d.resume)}
+      <div class="statusbar">
+        <span class="label">สถานะ:</span>
+        <button class="statbtn pass ${st==='pass'?'active':''}" data-id="${d.id}" data-val="pass">✓ ผ่าน</button>
+        <button class="statbtn fail ${st==='fail'?'active':''}" data-id="${d.id}" data-val="fail">✕ ไม่ผ่าน</button>
+        <button class="statbtn pending ${st==='pending'?'active':''}" data-id="${d.id}" data-val="pending">… รอตรวจสอบ</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll('.statbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      saveStatus(btn.dataset.id, btn.dataset.val);
+    });
+  });
+}
+
+async function loadStatuses(){
+  try{
+    const res = await window.storage.get(STATUS_KEY, true);
+    STATUSES = res && res.value ? JSON.parse(res.value) : {};
+  }catch(err){
+    STATUSES = {};
+  }
+}
+
+async function loadData(){
+  refreshBtn.disabled = true;
+  setStatusMsg('loading', 'กำลังโหลดข้อมูลล่าสุดจาก Google Sheet...');
+  try{
+    const [json] = await Promise.all([
+      fetchSheetJSONP(),
+      loadStatuses()
+    ]);
+    const { headers, dataRows } = gvizToTable(json);
+    DATA = rowsToRecords(headers, dataRows);
+    rebuildFilters();
+    render();
+    setStatusMsg('', '');
+    lastUpdated.textContent = 'อัปเดตล่าสุด: ' + new Date().toLocaleString('th-TH');
+  }catch(err){
+    setStatusMsg('error', `โหลดข้อมูลสดไม่สำเร็จ (${err.message}) — ชีตอาจไม่ได้เปิดสิทธิ์ "ทุกคนที่มีลิงก์ดูได้" หรือเครือข่ายบล็อก ลองกด "↻ รีเฟรชข้อมูล" อีกครั้ง หรือเปิดชีตต้นฉบับด้านบนแทน`);
+  }finally{
+    refreshBtn.disabled = false;
+  }
+}
+
+searchEl.addEventListener('input', render);
+readyEl.addEventListener('change', render);
+expEl.addEventListener('change', render);
+statusFilterEl.addEventListener('change', render);
+refreshBtn.addEventListener('click', loadData);
+
+loadData();
+</script>
+
+</body>
+</html>
